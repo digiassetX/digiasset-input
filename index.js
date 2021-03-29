@@ -1,63 +1,4 @@
-/**
- * @type {{
- *     assetId:     string,
- *     amount:      string|bigint,
- *     decimals:    int
- * }}
- */
-let AssetCount;
-
-/**
- * @type {{
- *     asm:         string,
- *     hex:         string,
- *     reqSigs:     int,
- *     type:        string,
- *     addresses:   array<string>
- * }}
- */
-let ScriptPubKey;
-
-/**
- * @type {{
- *     sequence:    int,
- *     value:       string|bigint,
- *
- *     coinbase:    string?,
- *
- *     txid:        string,
- *     vout:        int,
- *     source:      int,
- *     scriptSig:   {asm:string,hex:string},
- *     scriptPubKey:ScriptPubKey?,
- *     assets:      array<AssetCount>?
- * }}
- */
-let Vin;
-
-/**
- * @type {{
- *     value:       string|bigint,
- *     vout:        int,
- *     spent:       int?,
- *     scriptPubKey:ScriptPubKey,
- *     assets:      array<AssetCount>?
- * }}
- */
-let Vout;
-
-/**
- * key=txid
- * @type {{
- *     txid:       string,
- *     vin:        array<Vin>,
- *     vout:       array<Vout>,
- *     blockhash:  string,
- *     height:     int,
- *     time:       int
- * }}
- */
-let TxData;
+require('digiassetx-digibyte-stream-types');
 
 
 class AssetInput {
@@ -66,6 +7,8 @@ class AssetInput {
      * @param {TxData}  txData
      */
     constructor(txData) {
+        this._allowSkip=true;
+
         //record txid in case of error
         this._txid=txData.txid;
 
@@ -75,10 +18,11 @@ class AssetInput {
             //clone input asset data and break links
             let assets=[];
             let inAssets=vin.assets||[];
-            for (/** @type {AssetCount} */let asset of inAssets) assets.push({
-                assetId:    asset.assetId,
-                amount:     BigInt(asset.amount),
-                decimals:   asset.decimals
+            for (/** @type {AssetCount} */let {assetId,amount,decimals,cid} of inAssets) assets.push({
+                assetId,
+                amount:     BigInt(amount),
+                decimals,
+                cid
             });
             if (assets.length>0) this._inputs.push(assets);
         }
@@ -91,7 +35,8 @@ class AssetInput {
      * Skips to next input
      */
     skip() {
-        this._index++;
+        if (this._allowSkip) this._index++;     //ignore skip if last instruction emptied the input
+        this._allowSkip=true;
     }
 
     /**
@@ -101,6 +46,14 @@ class AssetInput {
      */
     getCount(percent) {
         return this._inputs[this._index][0].amount*BigInt(percent)/100n;
+    }
+
+    /**
+     * Gets cid if applicable
+     * @return {string}
+     */
+    getCID() {
+        return this._inputs[this._index][0].cid;
     }
 
     /**
@@ -130,11 +83,17 @@ class AssetInput {
             if (this._inputs[this._index][0].assetId!==assetId) throw new Error("Different asset then expected found in: "+this._txid);        //throw error for situation we can predict but unsure how to deal with
 
             //see if we used them all up
+            this._allowSkip=true;   //make sure true for all instructions except where ends on exactly 0 left
+            if ((currentAmount<left) && (assetId[1]==="h")) throw new Error("Hybrid assets can't rap over inputs: "+this._txid);
             if (currentAmount<=left) {
                 //used all assets in the input up
                 left-=currentAmount;
                 this._inputs[this._index].shift();
-                if (this._inputs[this._index].length===0) this._index++;    //used all inputs up so move to next
+                if (this._inputs[this._index].length===0) {
+                    //used all inputs up so move to next
+                    this._index++;
+                    this._allowSkip=false;//exactly 0 left so disable skip
+                }
             } else {
                 //there are assets left in the input
                 this._inputs[this._index][0].amount-=left;
@@ -153,10 +112,20 @@ class AssetInput {
         for (let input of this._inputs) {
             for (/** @type {AssetCount} */let asset of input) {
                 //something left over see if already in list
-                for (/** @type {AssetCount} */let assetTest of assets) {
-                    if (assetTest.assetId===asset.assetId) throw new Error("Multiple instance of same asset returned as change: "+this._txid);
+                let needAdding=true;
+                if (asset.assetId[1]==="a") {   //only search on aggregable
+                    for (/** @type {AssetCount} */let assetTest of assets) {
+                        if (assetTest.assetId === asset.assetId) {
+                            //already there so add the amount
+                            assetTest.amount += asset.amount;
+                            needAdding = false;
+                            break;
+                        }
+                    }
                 }
-                assets.push(asset);
+
+                //not found so add
+                if (needAdding) assets.push(asset);
             }
         }
         return assets;

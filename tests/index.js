@@ -130,10 +130,12 @@ module.exports = {
             }
         );
         test.equal(input.getCount(50),50);
+        test.equal(input.getCID(),undefined);
         test.equal(input.getAssetId(1n),"Ua94nEKabzhJeDJtxGFXdviT185tYeHqyHKeWC");
         test.equal(input.getDecimals(),2);
         let {assetId,amount,decimals}=input.getChange()[0];
         test.equal(assetId,"Ua94nEKabzhJeDJtxGFXdviT185tYeHqyHKeWC");
+        test.equal(input.getCID(),undefined);
         test.equal(amount,99n);
         test.equal(decimals,2);
         test.done();

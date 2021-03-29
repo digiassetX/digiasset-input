@@ -1,6 +1,6 @@
 {
   "name": "digiasset-input",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Decodes transactions inputs and allows easy processing of transactions",
   "main": "index.js",
   "scripts": {
@@ -11,6 +11,7 @@
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
+    "digiassetx-digibyte-stream-types": "^1.0.2",
     "nodeunit": "^0.11.3"
   },
   "repository": {

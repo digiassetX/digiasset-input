@@ -1,3 +1,3 @@
-# digiasset-decoder
+# digiasset-input
 
 This library is under development and may not be accurate.  See test file for examples
