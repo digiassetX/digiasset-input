@@ -1,18 +1,20 @@
 {
   "name": "digiasset-input",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Decodes transactions inputs and allows easy processing of transactions",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "keywords": [],
   "author": "Matthew Cornelisse",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "digiassetx-digibyte-stream-types": "^1.0.7"
+  },
   "devDependencies": {
-    "digiassetx-digibyte-stream-types": "^1.0.2",
-    "nodeunit": "^0.11.3"
+    "mocha": "^8.4.0",
+    "chai": "^4.3.4"
   },
   "repository": {
     "type": "git",
